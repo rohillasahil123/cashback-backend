@@ -1,3 +1,4 @@
+// models/User.js
 const mongoose = require("mongoose");
 
 const LoginSchema = new mongoose.Schema({
@@ -8,12 +9,23 @@ const LoginSchema = new mongoose.Schema({
     required: true
   },
   password: String,
-
-  
   wallet: {
     type: Number,
     default: 10
-  }
+  },
+  purchasedProducts: [
+    {
+      name: String,
+      level: String,
+      price: Number, // Make sure this is Number, not String
+      daily: String,
+      time: String,
+      purchasedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ]
 });
 
 module.exports = mongoose.model("loginData", LoginSchema);

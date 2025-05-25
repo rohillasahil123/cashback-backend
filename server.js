@@ -1,7 +1,8 @@
 const mongoose = require("mongoose")
 require("./db/connection.js")
 const User = require("./models/User_model.js")
-const UtrTransaction = require('./models/Utr_model.js');
+const UtrModel = require('./models/Utr_model.js');
+const Product = require('./models/Add_Items.js');
 
 const jwt = require("jsonwebtoken");
 const express = require("express")
@@ -108,8 +109,6 @@ app.post("/api/login", async (req, res) => {
 
 
 // Wallet  Add and Widral Amount
-
-
 app.post('/api/submit-utr', async (req, res) => {
   const { userId, utrNumber, amount } = req.body;
 
@@ -132,7 +131,6 @@ app.post('/api/submit-utr', async (req, res) => {
 });
 
 
-
 app.post('/api/approve-utr', async (req, res) => {
   const { utrNumber } = req.body;
 
@@ -147,7 +145,7 @@ app.post('/api/approve-utr', async (req, res) => {
   }
 
   // Find user by userId in utrRecord
-  const user = await UserModel.findById(utrRecord.userId);
+  const user = await User.findById(utrRecord.userId);
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
   }
@@ -161,6 +159,39 @@ app.post('/api/approve-utr', async (req, res) => {
   await utrRecord.save();
 
   res.status(200).json({ message: 'UTR approved and wallet updated' });
+});
+
+
+app.post('/api/update-utr', async (req, res) => {
+  const { utrNumber, status } = req.body;
+
+  if (!["approved", "rejected"].includes(status)) {
+    return res.status(400).json({ message: "Invalid status" });
+  }
+
+  const utrRecord = await UtrModel.findOne({ utrNumber });
+  if (!utrRecord) {
+    return res.status(404).json({ message: "UTR not found" });
+  }
+
+  if (utrRecord.status === status) {
+    return res.status(400).json({ message: `UTR already ${status}` });
+  }
+
+  // If approving, update user wallet
+  if (status === "approved") {
+    const user = await User.findById(utrRecord.userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.wallet = (user.wallet || 0) + utrRecord.amount;
+    await user.save();
+  }
+
+  // Update UTR status
+  utrRecord.status = status;
+  await utrRecord.save();
+
+  res.status(200).json({ message: `UTR ${status} successfully` });
 });
 
 
@@ -186,6 +217,97 @@ app.get('/api/wallet/:userId', async (req, res) => {
 
 
 
+// add items 
+app.post('/api/add-product', async (req, res) => {
+  const { name, price, daily, time, level } = req.body;
+
+  if (!name || !price || !daily || !time || !level) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  try {
+    const newProduct = new Product({ name, price, daily, time, level });
+    await newProduct.save();
+    res.status(201).json({ message: 'Product added successfully', product: newProduct });
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding product', error });
+  }
+});
+
+
+app.get('/api/get-product', async (req, res) => {
+  try {
+    const products = await Product.find();
+    console.log(products , "4")
+    res.status(200).json(products);       
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching products', error });
+  }
+});
+
+
+// perchage Product 
+app.post('/api/buy-product', async (req, res) => {
+  const { userId, name, level, price, daily, time } = req.body;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.wallet < price) {
+      return res.status(400).json({ message: 'Insufficient wallet balance' });
+    }
+
+    // Deduct price from wallet
+    user.wallet -= price;
+
+    // Add product to purchasedProducts
+    user.purchasedProducts.push({
+      name,
+      level,
+      price,
+      daily,
+      time,
+      purchasedAt: new Date()
+    });
+
+    await user.save();
+
+    res.status(200).json({
+      message: 'Product purchased successfully',
+      remainingWallet: user.wallet,
+      purchasedProduct: {
+        name,
+        level,
+        price,
+        daily,
+        time
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+
+app.get('/api/purchase-product/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId).select('purchasedProducts');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ purchasedProducts: user.purchasedProducts });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
 
 
 
