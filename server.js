@@ -132,6 +132,17 @@ app.post('/api/submit-utr', async (req, res) => {
 });
 
 
+app.get('/api/get-account', async (req, res) => {
+  try {
+    const products = await UtrModel.find();
+    res.status(200).json(products);       
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching products', error });
+  }
+});
+
+
+
 app.post('/api/approve-utr', async (req, res) => {
   const { utrNumber } = req.body;
 
@@ -239,7 +250,6 @@ app.post('/api/add-product', async (req, res) => {
 app.get('/api/get-product', async (req, res) => {
   try {
     const products = await Product.find();
-    console.log(products , "4")
     res.status(200).json(products);       
   } catch (error) {
     res.status(500).json({ message: 'Error fetching products', error });
