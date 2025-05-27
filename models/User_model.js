@@ -17,12 +17,16 @@ const LoginSchema = new mongoose.Schema({
     {
       name: String,
       level: String,
-      price: Number, // Make sure this is Number, not String
+      price: Number,
       daily: String,
       time: String,
       purchasedAt: {
         type: Date,
         default: Date.now
+      },
+      nextEarningAt: {
+        type: Date,
+        default: () => new Date(Date.now() + 24 * 60 * 60 * 1000) 
       }
     }
   ]

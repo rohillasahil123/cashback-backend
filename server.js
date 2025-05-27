@@ -247,50 +247,38 @@ app.get('/api/get-product', async (req, res) => {
 
 
 // perchage Product 
-app.post('/api/buy-product', async (req, res) => {
+app.post("/api/buy-product", async (req, res) => {
   const { userId, name, level, price, daily, time } = req.body;
 
   try {
     const user = await User.findById(userId);
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     if (user.wallet < price) {
-      return res.status(400).json({ message: 'Insufficient wallet balance' });
+      return res.status(400).json({ message: "Insufficient balance" });
     }
 
-    // Deduct price from wallet
-    user.wallet -= price;
-
-    // Add product to purchasedProducts
-    user.purchasedProducts.push({
+    const newProduct = {
       name,
       level,
       price,
       daily,
       time,
-      purchasedAt: new Date()
-    });
+      purchasedAt: new Date(),
+      nextEarningAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    };
+
+    user.wallet -= price;
+    user.purchasedProducts.push(newProduct);
 
     await user.save();
 
-    res.status(200).json({
-      message: 'Product purchased successfully',
-      remainingWallet: user.wallet,
-      purchasedProduct: {
-        name,
-        level,
-        price,
-        daily,
-        time
-      }
-    });
+    res.json({ message: "Product purchased", wallet: user.wallet });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Error purchasing product", error });
   }
-});
+}); 
 
 
 app.get('/api/purchase-product/:userId', async (req, res) => {
