@@ -110,7 +110,7 @@ app.post("/api/login", async (req, res) => {
 
 // Wallet  Add and Widral Amount
 app.post('/api/submit-utr', async (req, res) => {
-  const { userId, utrNumber, amount } = req.body;
+  const { userId, utrNumber, amount , name } = req.body;
 
   // Check if UTR already submitted
   const existingUtr = await UtrModel.findOne({ utrNumber });
@@ -123,6 +123,7 @@ app.post('/api/submit-utr', async (req, res) => {
     userId,
     utrNumber,
     amount,
+    name,
     status: 'pending',
   });
   await utrRecord.save();

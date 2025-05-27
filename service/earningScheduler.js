@@ -14,8 +14,8 @@ cron.schedule('* * * * *', async () => {
 
     user.purchasedProducts.forEach((product) => {
       if (product.nextEarningAt <= now) {
-        user.wallet += parseInt(product.daily); // Add daily to wallet
-        product.nextEarningAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // next 24h
+        user.wallet += parseInt(product.daily);
+        product.nextEarningAt = new Date(Date.now() + 24 * 60 * 60 * 1000); 
         updated = true;
       }
     });
