@@ -207,6 +207,27 @@ app.post('/api/update-utr', async (req, res) => {
 });
 
 
+app.post('/api/add-daily-earning', async (req, res) => {
+  const { productId, amount } = req.body;
+
+  try {
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    // Add daily earning (you can associate this with a user wallet)
+    product.earnedAmount = (product.earnedAmount || 0) + Number(amount);
+    product.nextEarningAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await product.save();
+
+    res.json({ message: 'Earning added and timer reset' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+
+
 
 app.get('/api/wallet/:userId', async (req, res) => {
   try {
