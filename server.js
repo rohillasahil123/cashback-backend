@@ -3,7 +3,7 @@ require("./db/connection.js")
 const User = require("./models/User_model.js")
 const UtrModel = require('./models/Utr_model.js');
 const Product = require('./models/Add_Items.js');
-
+const Withdrawal = require("./models/withdrawal_Model.js");
 const jwt = require("jsonwebtoken");
 const express = require("express")
 const bcrypt = require('bcrypt');
@@ -110,7 +110,7 @@ app.post("/api/login", async (req, res) => {
 
 // Wallet  Add and Widral Amount
 app.post('/api/submit-utr', async (req, res) => {
-  const { userId, utrNumber, amount , name } = req.body;
+  const { userId, utrNumber, amount, name } = req.body;
 
   // Check if UTR already submitted
   const existingUtr = await UtrModel.findOne({ utrNumber });
@@ -135,7 +135,7 @@ app.post('/api/submit-utr', async (req, res) => {
 app.get('/api/get-account', async (req, res) => {
   try {
     const products = await UtrModel.find();
-    res.status(200).json(products);       
+    res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching products', error });
   }
@@ -206,27 +206,131 @@ app.post('/api/update-utr', async (req, res) => {
   res.status(200).json({ message: `UTR ${status} successfully` });
 });
 
+// widthrawal Api 
 
-app.post('/api/add-daily-earning', async (req, res) => {
-  const { productId, amount } = req.body;
-
+app.post('/api/withdraw', async (req, res) => {
   try {
-    const product = await Product.findById(productId);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    const { userId, name, amount, paymentMethod, accountOrUpi, ifscCode } = req.body;
 
-    // Add daily earning (you can associate this with a user wallet)
-    product.earnedAmount = (product.earnedAmount || 0) + Number(amount);
-    product.nextEarningAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    await product.save();
+    if (!userId || !name || !amount || !paymentMethod || !accountOrUpi) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
 
-    res.json({ message: 'Earning added and timer reset' });
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
+
+    // 🧾 Get user and check wallet balance
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user.wallet < numericAmount) {
+      return res.status(400).json({ message: 'Insufficient wallet balance' });
+    }
+
+    // 💸 Deduct from wallet
+    user.wallet -= numericAmount;
+    await user.save();
+
+    const requestData = {
+      amount: numericAmount,
+      paymentMethod,
+      accountOrUpi,
+      ifscCode: paymentMethod === 'bank' ? ifscCode : null,
+      status: 'pending'
+    };
+
+    let withdrawalDoc = await Withdrawal.findOne({ userId });
+
+    if (withdrawalDoc) {
+      withdrawalDoc.requests.push(requestData);
+      await withdrawalDoc.save();
+    } else {
+      withdrawalDoc = new Withdrawal({
+        userId,
+        name,
+        requests: [requestData]
+      });
+      await withdrawalDoc.save();
+    }
+
+    res.status(200).json({ message: 'Withdrawal request saved successfully' });
+
   } catch (err) {
+    console.error('Withdrawal error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+
+app.get('/api/withdrawals', async (req, res) => {
+  try {
+    const allWithdrawals = await Withdrawal.find({});
+    res.status(200).json(allWithdrawals);
+  } catch (error) {
+    console.error('Error fetching withdrawals:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
 
 
+// Example route to update withdrawal status
+app.patch('/api/withdrawal/status', async (req, res) => {
+  const { withdrawalId, requestIndex, newStatus } = req.body;
+
+  try {
+    const withdrawalDoc = await Withdrawal.findById(withdrawalId);
+    if (!withdrawalDoc) return res.status(404).json({ message: 'Withdrawal not found' });
+
+    // Update the specific request
+    if (withdrawalDoc.requests[requestIndex]) {
+      withdrawalDoc.requests[requestIndex].status = newStatus;
+      await withdrawalDoc.save();
+      return res.status(200).json({ message: 'Status updated successfully' });
+    } else {
+      return res.status(400).json({ message: 'Invalid request index' });
+    }
+  } catch (err) {
+    console.error('Status update error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+// Daily Earning
+app.post('/api/add-daily-earning', async (req, res) => {
+  const { productId, amount } = req.body;
+
+  try {
+    // Step 1: Find the user who has this product inside purchasedProducts array
+    const user = await User.findOne({ 'purchasedProducts._id': productId });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Product not found in any user' });
+    }
+
+    // Step 2: Find the specific product inside purchasedProducts
+    const product = user.purchasedProducts.id(productId);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found in user data' });
+    }
+
+    // Step 3: Update product fields
+    product.earnedAmount = (product.earnedAmount || 0) + Number(amount);
+    product.nextEarningAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // next 24 hrs
+
+    // Step 4: Save the user document
+    await user.save();
+
+    res.json({ message: 'Earning added and timer reset' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 
 app.get('/api/wallet/:userId', async (req, res) => {
@@ -271,7 +375,7 @@ app.post('/api/add-product', async (req, res) => {
 app.get('/api/get-product', async (req, res) => {
   try {
     const products = await Product.find();
-    res.status(200).json(products);       
+    res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching products', error });
   }
@@ -310,7 +414,7 @@ app.post("/api/buy-product", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Error purchasing product", error });
   }
-}); 
+});
 
 
 app.get('/api/purchase-product/:userId', async (req, res) => {
