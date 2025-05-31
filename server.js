@@ -301,36 +301,43 @@ app.patch('/api/withdrawal/status', async (req, res) => {
 
 // Daily Earning
 app.post('/api/add-daily-earning', async (req, res) => {
-  const { productId, amount } = req.body;
+  const { userId, productId, amount } = req.body;
 
   try {
-    // Step 1: Find the user who has this product inside purchasedProducts array
-    const user = await User.findOne({ 'purchasedProducts._id': productId });
+    const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ message: 'Product not found in any user' });
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    // Step 2: Find the specific product inside purchasedProducts
     const product = user.purchasedProducts.id(productId);
 
     if (!product) {
-      return res.status(404).json({ message: 'Product not found in user data' });
+      return res.status(404).json({ message: 'Product not found for this user' });
     }
 
-    // Step 3: Update product fields
-    product.earnedAmount = (product.earnedAmount || 0) + Number(amount);
-    product.nextEarningAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // next 24 hrs
+    const amt = Number(amount);
 
-    // Step 4: Save the user document
+    // Update product earnings and timer
+    product.daily = String((parseFloat(product.daily) || 0) + amt); // assuming daily is string
+    product.nextEarningAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    // ✅ FIX: Correct field is `wallet`
+    user.wallet = (user.wallet || 0) + amt;
+
     await user.save();
 
-    res.json({ message: 'Earning added and timer reset' });
+    res.json({
+      message: 'Earning added, wallet updated',
+      wallet: user.wallet
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+
 
 
 app.get('/api/wallet/:userId', async (req, res) => {
