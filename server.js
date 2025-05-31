@@ -4,6 +4,8 @@ const User = require("./models/User_model.js")
 const UtrModel = require('./models/Utr_model.js');
 const Product = require('./models/Add_Items.js');
 const Withdrawal = require("./models/withdrawal_Model.js");
+const Code = require ("./models/Code_model.js")
+const verifyToken = require("./auth/authantication.js")
 const jwt = require("jsonwebtoken");
 const express = require("express")
 const bcrypt = require('bcrypt');
@@ -25,7 +27,7 @@ app.get("/alert", (req, res) => {
 
 // Register 
 
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', verifyToken, async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
@@ -66,7 +68,7 @@ app.post('/api/register', async (req, res) => {
 // login
 
 
-app.post("/api/login", async (req, res) => {
+app.post("/api/login", verifyToken, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -109,7 +111,7 @@ app.post("/api/login", async (req, res) => {
 
 
 // Wallet  Add and Widral Amount
-app.post('/api/submit-utr', async (req, res) => {
+app.post('/api/submit-utr', verifyToken, async (req, res) => {
   const { userId, utrNumber, amount, name } = req.body;
 
   // Check if UTR already submitted
@@ -132,7 +134,7 @@ app.post('/api/submit-utr', async (req, res) => {
 });
 
 
-app.get('/api/get-account', async (req, res) => {
+app.get('/api/get-account', verifyToken, async (req, res) => {
   try {
     const products = await UtrModel.find();
     res.status(200).json(products);
@@ -143,7 +145,7 @@ app.get('/api/get-account', async (req, res) => {
 
 
 
-app.post('/api/approve-utr', async (req, res) => {
+app.post('/api/approve-utr', verifyToken, async (req, res) => {
   const { utrNumber } = req.body;
 
   const utrRecord = await UtrModel.findOne({ utrNumber });
@@ -174,7 +176,7 @@ app.post('/api/approve-utr', async (req, res) => {
 });
 
 
-app.post('/api/update-utr', async (req, res) => {
+app.post('/api/update-utr', verifyToken, async (req, res) => {
   const { utrNumber, status } = req.body;
 
   if (!["approved", "rejected"].includes(status)) {
@@ -208,7 +210,7 @@ app.post('/api/update-utr', async (req, res) => {
 
 // widthrawal Api 
 
-app.post('/api/withdraw', async (req, res) => {
+app.post('/api/withdraw', verifyToken, async (req, res) => {
   try {
     const { userId, name, amount, paymentMethod, accountOrUpi, ifscCode } = req.body;
 
@@ -264,10 +266,27 @@ app.post('/api/withdraw', async (req, res) => {
 });
 
 
-app.get('/api/withdrawals', async (req, res) => {
+  app.get('/api/withdrawals', verifyToken, async (req, res) => {
+    try {
+      const allWithdrawals = await Withdrawal.find({});
+      res.status(200).json(allWithdrawals);
+    } catch (error) {
+      console.error('Error fetching withdrawals:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
+
+  app.get('/api/withdrawals/:userId',  async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+
   try {
-    const allWithdrawals = await Withdrawal.find({});
-    res.status(200).json(allWithdrawals);
+    const userWithdrawals = await Withdrawal.find({ userId });
+    res.status(200).json(userWithdrawals);
   } catch (error) {
     console.error('Error fetching withdrawals:', error);
     res.status(500).json({ message: 'Server error' });
@@ -275,9 +294,33 @@ app.get('/api/withdrawals', async (req, res) => {
 });
 
 
+app.get('/api/withdrawals/:userId',  async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const withdrawal = await Withdrawal.findOne({ userId });
+
+    if (!withdrawal) {
+      return res.status(404).json({ success: false, message: 'No withdrawals found for this user' });
+    }
+
+    res.status(200).json({
+      success: true,
+      name: withdrawal.name,
+      requests: withdrawal.requests.reverse() // latest first
+    });
+  } catch (error) {
+    console.error('Error fetching withdrawals:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+
+
+
+
 
 // Example route to update withdrawal status
-app.patch('/api/withdrawal/status', async (req, res) => {
+app.patch('/api/withdrawal/status', verifyToken, async (req, res) => {
   const { withdrawalId, requestIndex, newStatus } = req.body;
 
   try {
@@ -300,7 +343,7 @@ app.patch('/api/withdrawal/status', async (req, res) => {
 
 
 // Daily Earning
-app.post('/api/add-daily-earning', async (req, res) => {
+app.post('/api/add-daily-earning', verifyToken, async (req, res) => {
   const { userId, productId, amount } = req.body;
 
   try {
@@ -318,7 +361,6 @@ app.post('/api/add-daily-earning', async (req, res) => {
 
     const amt = Number(amount);
 
-    // Update product earnings and timer
     product.daily = String((parseFloat(product.daily) || 0) + amt); // assuming daily is string
     product.nextEarningAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
@@ -340,7 +382,7 @@ app.post('/api/add-daily-earning', async (req, res) => {
 
 
 
-app.get('/api/wallet/:userId', async (req, res) => {
+app.get('/api/wallet/:userId', verifyToken, async (req, res) => {
   try {
     const { userId } = req.params;
     console.log("Requested userId:", userId);
@@ -362,7 +404,7 @@ app.get('/api/wallet/:userId', async (req, res) => {
 
 
 // add items 
-app.post('/api/add-product', async (req, res) => {
+app.post('/api/add-product', verifyToken, async (req, res) => {
   const { name, price, daily, time, level } = req.body;
 
   if (!name || !price || !daily || !time || !level) {
@@ -379,7 +421,7 @@ app.post('/api/add-product', async (req, res) => {
 });
 
 
-app.get('/api/get-product', async (req, res) => {
+app.get('/api/get-product', verifyToken, async (req, res) => {
   try {
     const products = await Product.find();
     res.status(200).json(products);
@@ -390,7 +432,7 @@ app.get('/api/get-product', async (req, res) => {
 
 
 // perchage Product 
-app.post("/api/buy-product", async (req, res) => {
+app.post("/api/buy-product", verifyToken, async (req, res) => {
   const { userId, name, level, price, daily, time } = req.body;
 
   try {
@@ -424,7 +466,7 @@ app.post("/api/buy-product", async (req, res) => {
 });
 
 
-app.get('/api/purchase-product/:userId', async (req, res) => {
+app.get('/api/purchase-product/:userId', verifyToken, async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -440,6 +482,85 @@ app.get('/api/purchase-product/:userId', async (req, res) => {
   }
 });
 
+
+
+// Code  genrate and verify
+const generateRandomCode = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+
+const generateRandomAmount = () => {
+  return Math.floor(Math.random() * 6) + 2; // 2 to 7
+};
+
+
+// API Route
+app.post("/api/generate-code", async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ message: "UserId is required" });
+
+  try {
+    const code = generateRandomCode();
+    const amount = generateRandomAmount();
+    const newCode = new Code({ userId, code, amount });
+    await newCode.save();
+    res.status(201).json({ code, amount });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error generating code" });
+  }
+});
+
+
+// ✅ VERIFY CODE API
+app.post("/api/verify-code", async (req, res) => {
+  const { userId, code } = req.body;
+
+  if (!userId || !code) {
+    return res.status(400).json({ message: "UserId and Code are required" });
+  }
+
+  try {
+    const codeDoc = await Code.findOne({ code });
+
+    if (!codeDoc) {
+      return res.status(404).json({ valid: false, message: "Code not found" });
+    }
+
+    if (codeDoc.usedBy.includes(userId)) {
+      return res.status(400).json({ valid: false, message: "You have already used this code" });
+    }
+
+    if (codeDoc.usedBy.length >= 4) {
+      return res.status(400).json({ valid: false, message: "Code usage limit exceeded" });
+    }
+
+    codeDoc.usedBy.push(userId);
+    await codeDoc.save();
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ valid: false, message: "User not found" });
+    }
+
+    user.wallet += codeDoc.amount;
+    await user.save();
+
+    return res.status(200).json({
+      valid: true,
+      message: `₹${codeDoc.amount} added to your wallet`,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ valid: false, message: "Server error" });
+  }
+});
 
 
 
