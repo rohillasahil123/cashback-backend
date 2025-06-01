@@ -4,7 +4,7 @@ const User = require("./models/User_model.js")
 const UtrModel = require('./models/Utr_model.js');
 const Product = require('./models/Add_Items.js');
 const Withdrawal = require("./models/withdrawal_Model.js");
-const Code = require ("./models/Code_model.js")
+const Code = require("./models/Code_model.js")
 const verifyToken = require("./auth/authantication.js")
 const jwt = require("jsonwebtoken");
 const express = require("express")
@@ -26,49 +26,74 @@ app.get("/alert", (req, res) => {
 
 
 // Register 
-
-app.post('/api/register', verifyToken, async (req, res) => {
+app.post("/api/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, referredBy } = req.body;
 
-    const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ message: 'User already exists' });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
+    let bonus = 0;
+    let referralCodeMatched = false;
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    if (referredBy) {
+      const referrer = await User.findOne({ referralCode: referredBy });
+      if (!referrer) {
+        return res.status(400).json({ message: "Invalid referral code" });
+      }
 
+      referrer.wallet += 10;
+      await referrer.save();
+
+      bonus = 10;
+      referralCodeMatched = true;  // Referral code valid mila hai
+    }
+
+    async function generateUniqueReferralCode() {
+      let code;
+      let exists = true;
+      while (exists) {
+        code = Math.random().toString(36).substring(2, 8).toUpperCase();
+        exists = await User.findOne({ referralCode: code });
+      }
+      return code;
+    }
 
     const newUser = new User({
       name,
       email,
-      password: hashedPassword
-
+      password,
+      wallet: 10 + bonus,
+      referralCode: await generateUniqueReferralCode(),
+      referredBy: referredBy || null
     });
 
     await newUser.save();
 
     res.status(201).json({
-      message: 'success',
+      message: "User registered successfully",
+      referralCodeMatched,  // Yahan ye bhi bhej rahe hain
       user: {
-        _id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        wallet: newUser.wallet
+        wallet: newUser.wallet,
+        referralCode: newUser.referralCode,
+        referredBy: newUser.referredBy
       }
     });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ message: "Something went wrong", error });
   }
 });
-
 
 
 // login
 
 
-app.post("/api/login", verifyToken, async (req, res) => {
+app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -81,13 +106,11 @@ app.post("/api/login", verifyToken, async (req, res) => {
       return res.status(400).send({ message: "Email not found" });
     }
 
-    // ✅ Compare hashed password with bcrypt
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    if (user.password !== password) {
       return res.status(400).send({ message: "Incorrect password" });
     }
 
-    // ✅ Generate JWT
+
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       secretKey,
@@ -107,7 +130,6 @@ app.post("/api/login", verifyToken, async (req, res) => {
     res.status(500).send({ message: "Server error", error });
   }
 });
-
 
 
 // Wallet  Add and Widral Amount
@@ -266,18 +288,18 @@ app.post('/api/withdraw', verifyToken, async (req, res) => {
 });
 
 
-  app.get('/api/withdrawals', verifyToken, async (req, res) => {
-    try {
-      const allWithdrawals = await Withdrawal.find({});
-      res.status(200).json(allWithdrawals);
-    } catch (error) {
-      console.error('Error fetching withdrawals:', error);
-      res.status(500).json({ message: 'Server error' });
-    }
-  });
+app.get('/api/withdrawals', verifyToken, async (req, res) => {
+  try {
+    const allWithdrawals = await Withdrawal.find({});
+    res.status(200).json(allWithdrawals);
+  } catch (error) {
+    console.error('Error fetching withdrawals:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 
-  app.get('/api/withdrawals/:userId',  async (req, res) => {
+app.get('/api/withdrawals/:userId', async (req, res) => {
   const { userId } = req.params;
 
   if (!userId) {
@@ -294,7 +316,7 @@ app.post('/api/withdraw', verifyToken, async (req, res) => {
 });
 
 
-app.get('/api/withdrawals/:userId',  async (req, res) => {
+app.get('/api/withdrawals/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const withdrawal = await Withdrawal.findOne({ userId });
