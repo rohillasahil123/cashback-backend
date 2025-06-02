@@ -11,12 +11,14 @@ const jwt = require("jsonwebtoken");
 const express = require("express")
 const bcrypt = require('bcrypt');
 const secretKey = "cashback_website";
-const cors = require("cors")
-
+const cors = require('cors');
+app.use(cors({
+  origin: 'https://foodenergy.shop/',
+  credentials: true
+}));
 
 const app = express()
 app.use(express.json())
-app.use(cors())
 
 
 // Testing
