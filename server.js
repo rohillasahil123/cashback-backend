@@ -5,6 +5,7 @@ const UtrModel = require('./models/Utr_model.js');
 const Product = require('./models/Add_Items.js');
 const Withdrawal = require("./models/withdrawal_Model.js");
 const Code = require("./models/Code_model.js")
+const Event = require("./models/Event_Product.js")
 const verifyToken = require("./auth/authantication.js")
 const jwt = require("jsonwebtoken");
 const express = require("express")
@@ -426,9 +427,10 @@ app.get('/api/wallet/:userId', verifyToken, async (req, res) => {
 
 
 // add items 
-app.post('/api/add-product', verifyToken, async (req, res) => {
+app.post('/api/add-product',  async (req, res) => {
   const { name, price, daily, time, level } = req.body;
 
+  console.log(req.body)
   if (!name || !price || !daily || !time || !level) {
     return res.status(400).json({ message: 'All fields are required' });
   }
@@ -451,6 +453,39 @@ app.get('/api/get-product', verifyToken, async (req, res) => {
     res.status(500).json({ message: 'Error fetching products', error });
   }
 });
+
+
+// Event Product
+app.post('/api/event-product',  async (req, res) => {
+  const { name, price, daily, time, level } = req.body;
+
+  console.log(req.body)
+  if (!name || !price || !daily || !time || !level) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  try {
+    const newProduct = new Event({ name, price, daily, time, level });
+    await newProduct.save();
+    res.status(201).json({ message: 'Product added successfully', product: newProduct });
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding product', error });
+  }
+});
+
+
+app.get('/api/get-event',  async (req, res) => {
+  try {
+    const products = await Event.find();
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching products', error });
+  }
+});
+
+
+
+
 
 
 // perchage Product 
@@ -587,8 +622,7 @@ app.post("/api/verify-code", async (req, res) => {
 
 
 
-app.listen(5000, () => {
-  console.log(`Server running on  5000`);
+app.listen(5000, '0.0.0.0', () => {
+  console.log("Server running on port 5000");
 });
-
 

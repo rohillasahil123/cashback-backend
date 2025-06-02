@@ -5,21 +5,21 @@ const LoginSchema = new mongoose.Schema({
   email: {
     type: String,
     unique: true,
-    required: true,
+    required: true
   },
   password: String,
   wallet: {
     type: Number,
-    default: 10,
+    default: 10
   },
   referralCode: {
     type: String,
     unique: true,
-    required: true,
+    required: true
   },
   referredBy: {
     type: String,
-    default: null,
+    default: null
   },
   purchasedProducts: [
     {
@@ -30,14 +30,14 @@ const LoginSchema = new mongoose.Schema({
       time: String,
       purchasedAt: {
         type: Date,
-        default: Date.now,
+        default: Date.now
       },
       nextEarningAt: {
         type: Date,
-        default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-    },
-  ],
+        default: () => new Date(Date.now() + 24 * 60 * 60 * 1000) 
+      }
+    }
+  ]
 });
 
 module.exports = mongoose.model("loginData", LoginSchema);
