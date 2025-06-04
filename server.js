@@ -12,10 +12,18 @@ const express = require("express")
 const bcrypt = require('bcrypt');
 const secretKey = "cashback_website";
 const cors = require('cors');
-app.use(cors({
-  origin: "https://foodenergy.shop",
-  credentials: true, 
-}));
+app.use((req, res, next) => {
+  const allowedOrigins = ['https://foodenergy.shop', 'https://www.foodenergy.shop'];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
 
 const app = express()
 app.use(express.json())
