@@ -13,23 +13,20 @@ const bcrypt = require('bcrypt');
 const secretKey = "cashback_website";
 const cors = require('cors');
 
-
-
-
-const app = express()
+const app = express();
 
 app.use(cors({
   origin: ['https://foodenergy.shop', 'https://www.foodenergy.shop'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
-app.use(express.json())
 
-// Testing
-app.get("/alert", (req, res) => {
-  res.send("✅ API is working");
+app.use(express.json()); // MUST be before app.listen()
+
+app.get('/', (req, res) => {
+  // handle registration
+  res.json({ message: "Register API working" });
 });
-
 
 
 // Register 
