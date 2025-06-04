@@ -137,7 +137,7 @@ app.post("/v1/login", async (req, res) => {
 
 
 // Wallet  Add and Widral Amount
-app.post('/api/submit-utr', verifyToken, async (req, res) => {
+app.post('/v1/submit-utr', verifyToken, async (req, res) => {
   const { userId, utrNumber, amount, name } = req.body;
 
   // Check if UTR already submitted
@@ -160,7 +160,7 @@ app.post('/api/submit-utr', verifyToken, async (req, res) => {
 });
 
 
-app.get('/api/get-account', verifyToken, async (req, res) => {
+app.get('/v1/get-account', verifyToken, async (req, res) => {
   try {
     const products = await UtrModel.find();
     res.status(200).json(products);
@@ -171,7 +171,7 @@ app.get('/api/get-account', verifyToken, async (req, res) => {
 
 
 
-app.post('/api/approve-utr', verifyToken, async (req, res) => {
+app.post('/v1/approve-utr', verifyToken, async (req, res) => {
   const { utrNumber } = req.body;
 
   const utrRecord = await UtrModel.findOne({ utrNumber });
@@ -202,7 +202,7 @@ app.post('/api/approve-utr', verifyToken, async (req, res) => {
 });
 
 
-app.post('/api/update-utr', verifyToken, async (req, res) => {
+app.post('/v1/update-utr', verifyToken, async (req, res) => {
   const { utrNumber, status } = req.body;
 
   if (!["approved", "rejected"].includes(status)) {
@@ -236,7 +236,7 @@ app.post('/api/update-utr', verifyToken, async (req, res) => {
 
 // widthrawal Api 
 
-app.post('/api/withdraw', verifyToken, async (req, res) => {
+app.post('/v1/withdraw', verifyToken, async (req, res) => {
   try {
     const { userId, name, amount, paymentMethod, accountOrUpi, ifscCode } = req.body;
 
@@ -292,7 +292,7 @@ app.post('/api/withdraw', verifyToken, async (req, res) => {
 });
 
 
-app.get('/api/withdrawals', verifyToken, async (req, res) => {
+app.get('/v1/withdrawals', verifyToken, async (req, res) => {
   try {
     const allWithdrawals = await Withdrawal.find({});
     res.status(200).json(allWithdrawals);
@@ -303,7 +303,7 @@ app.get('/api/withdrawals', verifyToken, async (req, res) => {
 });
 
 
-app.get('/api/withdrawals/:userId', async (req, res) => {
+app.get('/v1/withdrawals/:userId', async (req, res) => {
   const { userId } = req.params;
 
   if (!userId) {
@@ -320,7 +320,7 @@ app.get('/api/withdrawals/:userId', async (req, res) => {
 });
 
 
-app.get('/api/withdrawals/:userId', async (req, res) => {
+app.get('/v1/withdrawals/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const withdrawal = await Withdrawal.findOne({ userId });
@@ -346,7 +346,7 @@ app.get('/api/withdrawals/:userId', async (req, res) => {
 
 
 // Example route to update withdrawal status
-app.patch('/api/withdrawal/status', verifyToken, async (req, res) => {
+app.patch('/v1/withdrawal/status', verifyToken, async (req, res) => {
   const { withdrawalId, requestIndex, newStatus } = req.body;
 
   try {
@@ -369,7 +369,7 @@ app.patch('/api/withdrawal/status', verifyToken, async (req, res) => {
 
 
 // Daily Earning
-app.post('/api/add-daily-earning', verifyToken, async (req, res) => {
+app.post('/v1/add-daily-earning', verifyToken, async (req, res) => {
   const { userId, productId, amount } = req.body;
 
   try {
@@ -408,7 +408,7 @@ app.post('/api/add-daily-earning', verifyToken, async (req, res) => {
 
 
 
-app.get('/api/wallet/:userId', verifyToken, async (req, res) => {
+app.get('/v1/wallet/:userId', verifyToken, async (req, res) => {
   try {
     const { userId } = req.params;
     console.log("Requested userId:", userId);
@@ -430,7 +430,7 @@ app.get('/api/wallet/:userId', verifyToken, async (req, res) => {
 
 
 // add items 
-app.post('/api/add-product',  async (req, res) => {
+app.post('/v1/add-product',  async (req, res) => {
   const { name, price, daily, time, level } = req.body;
 
   console.log(req.body)
@@ -448,7 +448,7 @@ app.post('/api/add-product',  async (req, res) => {
 });
 
 
-app.get('/api/get-product', verifyToken, async (req, res) => {
+app.get('/v1/get-product', verifyToken, async (req, res) => {
   try {
     const products = await Product.find();
     res.status(200).json(products);
@@ -459,7 +459,7 @@ app.get('/api/get-product', verifyToken, async (req, res) => {
 
 
 // Event Product
-app.post('/api/event-product',  async (req, res) => {
+app.post('/v1/event-product',  async (req, res) => {
   const { name, price, daily, time, level } = req.body;
 
   console.log(req.body)
@@ -477,7 +477,7 @@ app.post('/api/event-product',  async (req, res) => {
 });
 
 
-app.get('/api/get-event',  async (req, res) => {
+app.get('/v1/get-event',  async (req, res) => {
   try {
     const products = await Event.find();
     res.status(200).json(products);
@@ -492,7 +492,7 @@ app.get('/api/get-event',  async (req, res) => {
 
 
 // perchage Product 
-app.post("/api/buy-product", verifyToken, async (req, res) => {
+app.post("/v1/buy-product", verifyToken, async (req, res) => {
   const { userId, name, level, price, daily, time } = req.body;
 
   try {
@@ -526,7 +526,7 @@ app.post("/api/buy-product", verifyToken, async (req, res) => {
 });
 
 
-app.get('/api/purchase-product/:userId', verifyToken, async (req, res) => {
+app.get('/v1/purchase-product/:userId', verifyToken, async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -561,7 +561,7 @@ const generateRandomAmount = () => {
 
 
 // API Route
-app.post("/api/generate-code", async (req, res) => {
+app.post("/v1/generate-code", async (req, res) => {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ message: "UserId is required" });
 
@@ -579,7 +579,7 @@ app.post("/api/generate-code", async (req, res) => {
 
 
 // ✅ VERIFY CODE API
-app.post("/api/verify-code", async (req, res) => {
+app.post("/v1/verify-code", async (req, res) => {
   const { userId, code } = req.body;
 
   if (!userId || !code) {
