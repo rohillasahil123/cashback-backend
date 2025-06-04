@@ -30,7 +30,7 @@ app.get('/alert', (req, res) => {
 
 
 // Register 
-app.post("/api/register", async (req, res) => {
+app.post("/v1/register", async (req, res) => {
   try {
     const { name, email, password, referredBy } = req.body;
 
@@ -97,7 +97,7 @@ app.post("/api/register", async (req, res) => {
 // login
 
 
-app.post("/api/login", async (req, res) => {
+app.post("/v1/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
