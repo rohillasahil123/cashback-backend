@@ -13,15 +13,17 @@ const bcrypt = require('bcrypt');
 const secretKey = "cashback_website";
 const cors = require('cors');
 
+
+
+
+const app = express()
+
 app.use(cors({
   origin: ['https://foodenergy.shop', 'https://www.foodenergy.shop'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
-
-const app = express()
 app.use(express.json())
-
 
 // Testing
 app.get("/alert", (req, res) => {
