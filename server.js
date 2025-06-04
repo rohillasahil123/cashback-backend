@@ -23,7 +23,7 @@ app.use(cors({
 
 app.use(express.json()); // MUST be before app.listen()
 
-app.get('/', (req, res) => {
+app.get('/alert', (req, res) => {
   // handle registration
   res.json({ message: "Register API working" });
 });
