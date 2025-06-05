@@ -12,6 +12,8 @@ const express = require("express")
 const bcrypt = require('bcrypt');
 const secretKey = "cashback_website";
 const cors = require('cors');
+const PORT = 5000;
+
 
 const app = express();
 
@@ -21,10 +23,9 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json()); // MUST be before app.listen()
+app.use(express.json()); 
 
 app.get('/alert', (req, res) => {
-  // handle registration
   res.json({ message: "Register API working" });
 });
 
@@ -623,9 +624,12 @@ app.post("/v1/verify-code", async (req, res) => {
 });
 
 
+// app.listen(5000) iski jgh assak  krete hai 
+// fdchnsmiddfgvubhjnkhgvdshjsz kfsdghhbjcngdff
+// dygufnsdigfhunfdgbvndfxghnofuvjev
+// fuydbvndfv hcfmfidcxusfgcndbmuf,zxdgvdfuffgbuhgnvf
 
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
 
-app.listen(5000, '0.0.0.0', () => {
-  console.log("Server running on port 5000");
 });
-
