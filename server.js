@@ -18,7 +18,7 @@ const PORT = 5000;
 const app = express();
 
 app.use(cors({
-  origin: ['https://foodenergy.shop', 'https://www.foodenergy.shop'],
+  origin: ['https://foodenergy.shop', 'https://www.foodenergy.shop' , 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
@@ -624,10 +624,6 @@ app.post("/v1/verify-code", async (req, res) => {
 });
 
 
-// app.listen(5000) iski jgh assak  krete hai 
-// fdchnsmiddfgvubhjnkhgvdshjsz kfsdghhbjcngdff
-// dygufnsdigfhunfdgbvndfxghnofuvjev
-// fuydbvndfv hcfmfidcxusfgcndbmuf,zxdgvdfuffgbuhgnvf
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
