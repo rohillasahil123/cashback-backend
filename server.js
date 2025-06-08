@@ -18,7 +18,7 @@ const PORT = 5000;
 const app = express();
 
 app.use(cors({
-  origin: ['https://foodenergy.shop', 'https://www.foodenergy.shop' , 'http://localhost:5173'],
+  origin: ['https://foodenergy.shop', 'https://www.foodenergy.shop' , 'http://localhost:5173/'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
@@ -387,25 +387,30 @@ app.post('/v1/add-daily-earning', verifyToken, async (req, res) => {
     }
 
     const amt = Number(amount);
+    const now = new Date();
 
-    product.daily = String((parseFloat(product.daily) || 0) + amt); // assuming daily is string
-    product.nextEarningAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // Only allow earning if nextEarningAt has passed
+    if (!product.nextEarningAt || now >= new Date(product.nextEarningAt)) {
+      product.daily = String(amt); // Reset or set to today's amount
+      product.nextEarningAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // next 24 hrs
+      user.wallet = (user.wallet || 0) + amt;
 
-    // ✅ FIX: Correct field is `wallet`
-    user.wallet = (user.wallet || 0) + amt;
+      await user.save();
 
-    await user.save();
-
-    res.json({
-      message: 'Earning added, wallet updated',
-      wallet: user.wallet
-    });
+      return res.json({
+        message: 'Earning added, wallet updated',
+        wallet: user.wallet
+      });
+    } else {
+      return res.status(400).json({
+        message: 'Daily earning already added. Try again after ' + product.nextEarningAt
+      });
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
-
 
 
 
