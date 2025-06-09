@@ -98,9 +98,7 @@ app.post("/v1/register", async (req, res) => {
   }
 });
 
-
 // login
-
 app.post("/v1/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -142,20 +140,28 @@ app.post("/v1/login", async (req, res) => {
 // getUser
 app.get('/v1/user-details/:userId', async (req, res) => {
   const { userId } = req.params;
-
   try {
     const user = await User.findById(userId);
-
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
     console.log("User Details:", user); 
 
     return res.status(200).json(user);
   } catch (error) {
     console.error("Error fetching user:", error);
     return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// get User 
+app.get('/v1/users', async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.status(200).json(users);
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ message: "Server Error" });
   }
 });
 
