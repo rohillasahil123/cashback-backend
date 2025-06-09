@@ -39,7 +39,11 @@ app.post("/v1/register", async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
-
+// smsa;lsbjhs;mljbhsq;lhjqskfywebudwidjkw
+// wefgjisawuidwgfweudwuwxwxvqw
+// djdmfyudfcyhfjcdgbcv bncfdgudhsjfhjj
+// eytfeyuewuw
+// xcsnfgrxcghghgcgvbd cgvfdfjghjklk;l
     let bonus = 0;
     let referralCodeMatched = false;
 
@@ -52,7 +56,7 @@ app.post("/v1/register", async (req, res) => {
       referrer.wallet += 10;
       await referrer.save();
 
-      bonus = 10;
+      bonus = 20;
       referralCodeMatched = true;  // Referral code valid mila hai
     }
 
@@ -97,7 +101,6 @@ app.post("/v1/register", async (req, res) => {
 
 // login
 
-
 app.post("/v1/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -136,6 +139,25 @@ app.post("/v1/login", async (req, res) => {
   }
 });
 
+// getUser
+app.get('/v1/user-details/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log("User Details:", user); 
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // Wallet  Add and Widral Amount
 app.post('/v1/submit-utr', verifyToken, async (req, res) => {
